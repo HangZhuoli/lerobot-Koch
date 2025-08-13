@@ -6,15 +6,15 @@
 
 1、 在video_utils.py文件内部需要修改torchcodec为pyav，因为这是视频编码格式问题，torchcodec容易导致不稳定，我们无论哪种方案都选择使用稳定的pyav
 
-![image-20250813094305264](C:\Users\杭杭\AppData\Roaming\Typora\typora-user-images\image-20250813094305264.png)
+![image-20250813094305264](./pic/image-20250813094305264.png)
 
 2、在camera_opencv.py将多余的部分删除，保留self.index_or_path
 
-![image-20250813094944219](C:\Users\杭杭\AppData\Roaming\Typora\typora-user-images\image-20250813094944219.png)
+![image-20250813094944219](./pic/image-20250813094944219.png)
 
 3、在执行数据集录制的过程中会出现因为双臂通信存在延迟问题，导致主、从臂连接不上从而引发录制数据集num_try次数达到上限，所以修改num_try次数避免数据集录制中断。具体步骤为修改koch_follower中部分代码问题
 
-![image-20250813095752843](C:\Users\杭杭\AppData\Roaming\Typora\typora-user-images\image-20250813095752843.png)
+![image-20250813095752843](./pic/image-20250813095752843.png)
 
 ## 利用脚本使用lerobot框架内部的有关koch机器臂的相关代码
 
