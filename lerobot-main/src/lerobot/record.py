@@ -113,6 +113,17 @@ from lerobot.utils.utils import (
 from lerobot.utils.visualization_utils import _init_rerun, log_rerun_data
 
 
+# 保存原始方法
+_orig_NTF = tempfile.NamedTemporaryFile
+
+def NamedTemporaryFile_windows(*args, **kwargs):
+    # Windows 下强制 delete=False，避免锁文件
+    kwargs['delete'] = False
+    return _orig_NTF(*args, **kwargs)
+
+# 覆盖掉
+tempfile.NamedTemporaryFile = NamedTemporaryFile_windows
+
 @dataclass
 class DatasetRecordConfig:
     # Dataset identifier. By convention it should match '{hf_username}/{dataset_name}' (e.g. `lerobot/test`).

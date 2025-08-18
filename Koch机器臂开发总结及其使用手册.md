@@ -44,15 +44,70 @@ python -m lerobot.record     --robot.type=koch_follower     --robot.port=COM4   
 这是针对koch机器臂的训练，采取方法为VA模型的ACT算法以及其变种。注意output的目录，是在运行程序的当前目录，或者直接设置其固定路径。
 
 ```python
-python -m lerobot.scripts.train   --policy.type=act   --policy.push_to_hub=false  --dataset.root=H:/dataset_for_smolvla
- --dataset.repo_id=lizhuohang/block_cup_dataset_ACT   --batch_size=16   --steps=20000   --output_dir=outputs/train/my_koch_lzh   --job_name=my_kochACT_training --policy.device=cuda   --wandb.enable=false --policy.device=cuda
+python -m lerobot.scripts.train   --policy.type=act   --policy.push_to_hub=false --dataset.root=H:/dataset_for_smolvla --dataset.repo_id=lizhuohang/block_cup_dataset_ACT   --batch_size=16   --steps=20000   --output_dir=outputs/train/my_koch_lzh   --job_name=my_kochACT_training --policy.device=cuda   --wandb.enable=false --policy.device=cuda
 ```
 
 - 评估、真机演示代码
 
+以下是通过离线操作实现来控制机器臂koch从臂来进行自主控制。💥注意相机参数的配置!!!! 形参内部path为本地存储路径。
+
+```python
+--robot.type=koch_follower
+--robot.port=COM7
+--robot.id=my_follower
+--robot.cameras="{ left: { type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30, color_mode: 'rgb', rotation: 'NO_ROTATION' }, above: { type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30, color_mode: 'rgb', rotation: 'NO_ROTATION' } }"
+--teleop.type=koch_leader
+--teleop.port=COM8
+--teleop.id=my_leader
+--display_data=false
+--dataset.reset_time_s=10
+--dataset.single_task="Grab the purple rectangle and put it in the bowl."
+--dataset.push_to_hub=False
+--dataset.root=H:\eval_results\eval_purple_dataset_ACT_zj
+--dataset.repo_id=renjielv030/eval_purple_dataset_ACT_zj
+--dataset.num_episodes=3
+--dataset.episode_time_s=100
+--policy.path=H:\my_koch_lzh_zhangjiang\checkpoints\last\pretrained_model
+```
+
+
+
 这是针对koch机器臂选择指定策略，如act策略训练之后得到的模型权重来进行真机演示操作。
 
+## 出现的错误解析🧨：
 
+- 关于解决draccus库下支持的读写文件的权限的原因在不同的系统上有着不同的读写方式，在linux可以支持对一个文件同时进行读写，但是在windows下面不能对一个文件又读又写，内部操作系统会对文件进行保护。
+
+  ```python
+  File "D:\conda_config\envs\lerobotaloah\lib\site-packages\draccus\argparsing.py", line 104, in parse_args args, _ = self.parse_known_args(args, namespace, is_parse_args=True) File "D:\conda_config\envs\lerobotaloah\lib\site-packages\draccus\argparsing.py", line 138, in parse_known_args parsed_t = self._postprocessing(parsed_args) File "D:\conda_config\envs\lerobotaloah\lib\site-packages\draccus\argparsing.py", line 175, in _postprocessing with open(config_path, "r") as f: PermissionError: [Errno 13] Permission denied: 'C:\\Users\\杭杭\\Temp\\tmpzeronybn'
+  ```
+
+  报错类型如上所展示：
+
+  - ✨尝试过的解决方案：
+
+    1、 修改文件权限，修改完完全控制，但是依然出现错误❌
+
+    2、 修改用户环境变量，修改至C盘目录下面，还是会出现同样的错误❌
+
+    3、修改其他环境变量以及读写限制，还是出现错误❌
+
+    ✔：修改draccus库在windows下对于文件的读写权限：在record.py文件下添加以下代码：
+
+    ```python
+    # 保存原始方法
+    _orig_NTF = tempfile.NamedTemporaryFile
+    
+    def NamedTemporaryFile_windows(*args, **kwargs):
+        # Windows 下强制 delete=False，避免锁文件
+        kwargs['delete'] = False
+        return _orig_NTF(*args, **kwargs)
+    
+    # 覆盖掉
+    tempfile.NamedTemporaryFile = NamedTemporaryFile_windows
+    ```
+
+    便可以正确加载机器臂的相关配置信息并且能够成功运行。
 
 ## 数据集相关定义部分
 
